@@ -10,9 +10,10 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#include <LiquidCrystal.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
-LiquidCrystal lcd( 7, 6, 5, 4, 3, 2 );
+LiquidCrystal_I2C lcd( 0x27, 16, 2 );
 
 // Instantiate all of our peripherals
 const int numOfInputs = 3;
@@ -43,8 +44,10 @@ int parameters[ numOfScreens ];
 /*****************************************************************************/
 void setup()
 {
+    Wire.begin();
     lcd.begin( 16, 2 );
-    lcd.print( "Extrumento v0.1" );
+    lcd.backlight();
+    lcd.print( "Extrumento v0.2" );
     delay( 2000 );
 
     for( int i = 0; i < numOfInputs; i++ )
