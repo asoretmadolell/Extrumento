@@ -19,6 +19,10 @@
 #define BUTTON1 2
 #define BUTTON2 3
 
+// Pins
+const int dirPin = 4;
+const int stepPin = 5;
+
 // Instantiations
 LiquidCrystal_I2C myLcd( 0x27, 16, 2 );
 
@@ -26,7 +30,7 @@ LiquidCrystal_I2C myLcd( 0x27, 16, 2 );
 const int numOfPages = 3;
 volatile int currentPage = 0;
 volatile int parameters[ numOfPages ];
-volatile bool screenChanged = false;
+volatile bool screenChanged = true;
 String screens[ numOfPages ][ 2 ] =
 {
 { "Temperatura", "C" },
@@ -42,18 +46,20 @@ String screens[ numOfPages ][ 2 ] =
 /*****************************************************************************/
 void setup()
 {
-    Wire.begin();
-    myLcd.begin( 16, 2 );
-    myLcd.backlight();
-    myLcd.print( "Extrumento v0.2" );
-    delay( 2000 );
-    printScreen();
-
     pinMode( BUTTON1, INPUT );
     pinMode( BUTTON2, INPUT );
+    pinMode( stepPin, OUTPUT );
+    pinMode( dirPin, OUTPUT );
 
     attachInterrupt( 0, button1isr, RISING );
     attachInterrupt( 1, button2isr, RISING );
+
+    Wire.begin();
+    myLcd.begin( 16, 2 );
+
+    myLcd.backlight();
+    myLcd.print( "Extrumento v0.2" );
+    delay( 2000 );
 }
 
 /*****************************************************************************/
@@ -66,6 +72,28 @@ void setup()
 void loop()
 {
     if( screenChanged ) printScreen();
+
+    digitalWrite( dirPin, HIGH );
+
+    for( int x = 0; x < 200; x++ )
+    {
+        digitalWrite( stepPin, HIGH );
+        delayMicroseconds(500);
+        digitalWrite( stepPin, LOW );
+        delayMicroseconds(500);
+    }
+    delay(1000);
+
+    digitalWrite( dirPin, LOW );
+
+    for( int x = 0; x < 400; x++ )
+    {
+        digitalWrite( stepPin, HIGH );
+        delayMicroseconds(500);
+        digitalWrite( stepPin, LOW );
+        delayMicroseconds(500);
+    }
+    delay(1000);
 }
 
 /*****************************************************************************/
@@ -75,6 +103,8 @@ void loop()
 /*****************************************************************************/
 void printScreen()
 {
+    //noInterrupts(); // disable interrupts momentarily in case the screen tries to access the variables while they're being modified.
+
     myLcd.clear();
     myLcd.print( screens[ currentPage ][ 0 ] );
     myLcd.setCursor( 0, 1 );
@@ -82,6 +112,8 @@ void printScreen()
     myLcd.print( " " );
     myLcd.print( screens[ currentPage ][ 1 ] );
     screenChanged = false;
+
+    //interrupts();
 }
 
 /*****************************************************************************/
