@@ -14,6 +14,7 @@
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <AccelStepper.h>
 
 // Defines
 #define BUTTON1 2
@@ -35,7 +36,9 @@ String screens[ numOfPages ][ 2 ] =
 {
 { "Temperatura", "C" },
 { "Velocidad", "rpm" },
-{ "Opcion 3", "Valor 3" } };
+{ "Girar motor?", "" } };
+
+volatile bool stepperSpinning = false;
 
 /*****************************************************************************/
 /*                                                                           */
@@ -71,37 +74,39 @@ void setup()
 /*****************************************************************************/
 void loop()
 {
-    if( screenChanged ) printScreen();
-
-    digitalWrite( dirPin, HIGH );
-
-    for( int x = 0; x < 200; x++ )
-    {
-        digitalWrite( stepPin, HIGH );
-        delayMicroseconds(500);
-        digitalWrite( stepPin, LOW );
-        delayMicroseconds(500);
-    }
-    delay(1000);
-
-    digitalWrite( dirPin, LOW );
-
-    for( int x = 0; x < 400; x++ )
-    {
-        digitalWrite( stepPin, HIGH );
-        delayMicroseconds(500);
-        digitalWrite( stepPin, LOW );
-        delayMicroseconds(500);
-    }
-    delay(1000);
+    if( screenChanged ) printMenu();
+    if (stepperSpinning == true ) spinStepper();
+    //testStepper();
 }
 
 /*****************************************************************************/
 /*                                                                           */
-/* printScreen()                                                             */
+/* spinStepper()                                                             */
 /*                                                                           */
 /*****************************************************************************/
-void printScreen()
+void spinStepper()
+{
+    if( stepperSpinning == false )
+    {
+        stepperSpinning = true;
+        myLcd.clear();
+        myLcd.print( "Motor girando!" );
+    }
+    while(stepperSpinning == true)
+    {
+        digitalWrite( stepPin, HIGH );
+        delayMicroseconds( 500 );
+        digitalWrite( stepPin, LOW );
+        delayMicroseconds( 500 );
+    }
+}
+
+/*****************************************************************************/
+/*                                                                           */
+/* printMenu()                                                               */
+/*                                                                           */
+/*****************************************************************************/
+void printMenu()
 {
     //noInterrupts(); // disable interrupts momentarily in case the screen tries to access the variables while they're being modified.
 
@@ -123,14 +128,13 @@ void printScreen()
 /*****************************************************************************/
 void button1isr()
 {
-    if( currentPage == numOfPages - 1 )
+    if( stepperSpinning == true )
     {
-        currentPage = 0;
+        stepperSpinning = false;
+        screenChanged = true;
     }
-    else
-    {
-        currentPage++;
-    }
+    if( currentPage == numOfPages - 1 ) currentPage = 0;
+    else currentPage++;
     screenChanged = true;
 }
 
@@ -141,6 +145,41 @@ void button1isr()
 /*****************************************************************************/
 void button2isr()
 {
+    if( stepperSpinning == true )
+    {
+        stepperSpinning = false;
+        screenChanged = true;
+    }
     parameters[ currentPage ]++;
     screenChanged = true;
+}
+
+/*****************************************************************************/
+/*                                                                           */
+/* testStepper()                                                             */
+/*                                                                           */
+/*****************************************************************************/
+void testStepper()
+{
+    digitalWrite( dirPin, HIGH );
+
+    for( int x = 0; x < 200; x++ )
+    {
+        digitalWrite( stepPin, HIGH );
+        delayMicroseconds( 500 );
+        digitalWrite( stepPin, LOW );
+        delayMicroseconds( 500 );
+    }
+    delay( 1000 );
+
+    digitalWrite( dirPin, LOW );
+
+    for( int x = 0; x < 400; x++ )
+    {
+        digitalWrite( stepPin, HIGH );
+        delayMicroseconds( 500 );
+        digitalWrite( stepPin, LOW );
+        delayMicroseconds( 500 );
+    }
+    delay( 1000 );
 }
